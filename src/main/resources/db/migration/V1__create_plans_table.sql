@@ -1,0 +1,5 @@
+CREATE TABLE plans (
+  id SERIAL PRIMARY KEY,
+  plan VARCHAR(255) NOT NULL,
+  date DATE NOT NULL
+);
