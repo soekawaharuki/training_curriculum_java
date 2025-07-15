@@ -14,74 +14,70 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 
-import in.tech_camp.training_curriculum_java.repository.PlanRepository;
-import in.tech_camp.training_curriculum_java.form.PlanForm;
 import in.tech_camp.training_curriculum_java.entity.PlanEntity;
-
+import in.tech_camp.training_curriculum_java.form.PlanForm;
+import in.tech_camp.training_curriculum_java.repository.PlanRepository;
 import lombok.AllArgsConstructor;
 
 @Controller
 @AllArgsConstructor
 public class CalendarsController {
 
-    private final PlanRepository planRepository;
+  private final PlanRepository planRepository;
 
-    // 1週間のカレンダーと予定が表示されるページ
-    @GetMapping("/")
-    public String index(Model model) {
-        model.addAttribute("planForm", new PlanForm());
-        // ★変更点①: メソッド名をキャメルケースに修正しました
-        List<Map<String, Object>> weekDays = getWeek();
-        model.addAttribute("weekDays", weekDays);
-        return "calendars/index";
+  // 1週間のカレンダーと予定が表示されるページ
+  @GetMapping("/")
+  public String index(Model model) {
+    model.addAttribute("planForm", new PlanForm());
+    List<Map<String, Object>> weekDays = get_week();
+    model.addAttribute("weekDays", weekDays);
+    return "calendars/index";
+  }
+
+  // 予定の保存
+  @PostMapping("/calendars")
+  public String create(@ModelAttribute("planForm") @Validated PlanForm planForm, BindingResult result) {
+    if (!result.hasErrors()) {
+      PlanEntity newPlan = new PlanEntity();
+      newPlan.setDate(planForm.getDate());
+      newPlan.setPlan(planForm.getPlan());
+      planRepository.insert(newPlan);
+    }
+    return "redirect:/";
+  }
+
+  private List<Map<String, Object>> get_week() {
+    List<Map<String, Object>> weekDays = new ArrayList<>();
+
+    LocalDate todaysDate = LocalDate.now();
+    List<PlanEntity> plans = planRepository.findByDateBetween(todaysDate, todaysDate.plusDays(6));
+
+    String[] wdays = {"(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"};
+
+    for (int x = 0; x < 7; x++) {
+      Map<String, Object> day_map = new HashMap<String, Object>();
+      LocalDate currentDate = todaysDate.plusDays(x);
+
+      List<String> todayPlans = new ArrayList<>();
+      for (PlanEntity plan : plans) {
+          if (plan.getDate().equals(currentDate)) {
+              todayPlans.add(plan.getPlan());
+          }
+      }
+
+      // 曜日番号を計算  day_map.put("month", currentDate.getMonthValue());
+      int wdayNum = (todaysDate.getDayOfWeek().getValue() + x) % 7;
+
+      day_map.put("month", currentDate.getMonthValue());
+      day_map.put("date", currentDate.getDayOfMonth());
+      day_map.put("plans", todayPlans);
+      day_map.put("wday", wdays[wdayNum]);
+
+      weekDays.add(day_map);
     }
 
-    // 予定の保存
-    @PostMapping("/calendars")
-    public String create(@ModelAttribute("planForm") @Validated PlanForm planForm, BindingResult result) {
-        if (!result.hasErrors()) {
-            PlanEntity newPlan = new PlanEntity();
-            newPlan.setDate(planForm.getDate());
-            newPlan.setPlan(planForm.getPlan());
-            planRepository.insert(newPlan);
-        }
-        // ★補足: 元のコードでは/calendarsにリダイレクトしていましたが、
-        // トップページは「/」なので、こちらにリダイレクトするのが一般的です。
-        return "redirect:/";
-    }
+    return weekDays;
+  }
 
-    // ★変更点①: メソッド名を「get_week」から「getWeek」に修正しました。
-    // メソッド名は小文字のキャメルケースで始めるのがJavaの命名規則です。
-    private List<Map<String, Object>> getWeek() {
-        Map<String, Object> dayMap = new HashMap<>();
 
-        LocalDate todaysDate = LocalDate.now();
-        List<PlanEntity> plans = planRepository.findByDateBetween(todaysDate, todaysDate.plusDays(6));
-
-        // 曜日の配列（元のコードでは未使用でしたが、カレンダー表示に役立つので活用します）
-        String[] wdays = {"(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"};
-
-        for (int x = 0; x < 7; x++) {
-            // ★変更点②: Mapの型を修正しました。
-            // 複数の型の値（Integer, List）を入れるため、Map<String, Object>とします。
-            Map<String, Object> dayInfo = new HashMap<>();
-            LocalDate currentDate = todaysDate.plusDays(x);
-
-            List<String> todayPlans = new ArrayList<>();
-            for (PlanEntity plan : plans) {
-                if (plan.getDate().equals(currentDate)) {
-                    todayPlans.add(plan.getPlan());
-                }
-            }
-
-            // ★変更点③: 存在しない変数「day_map」を、上で定義した変数「dayInfo」に修正しました。
-            // これは命名規則というより、プログラムが動くための修正です。
-            dayMap.put("month", currentDate.getMonthValue());
-            dayMap.put("date", currentDate.getDayOfMonth());
-            dayMap.put("plans", todayPlans);
-            weekDays.add(dayMap);
-        }
-
-        return weekDays;
-    }
 }
