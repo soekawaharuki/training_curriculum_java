@@ -53,7 +53,7 @@ public class CalendarsController {
     // ★変更点①: メソッド名を「get_week」から「getWeek」に修正しました。
     // メソッド名は小文字のキャメルケースで始めるのがJavaの命名規則です。
     private List<Map<String, Object>> getWeek() {
-        List<Map<String, Object>> weekDays = new ArrayList<>();
+        Map<String, Object> dayMap = new HashMap<>();
 
         LocalDate todaysDate = LocalDate.now();
         List<PlanEntity> plans = planRepository.findByDateBetween(todaysDate, todaysDate.plusDays(6));
@@ -76,13 +76,10 @@ public class CalendarsController {
 
             // ★変更点③: 存在しない変数「day_map」を、上で定義した変数「dayInfo」に修正しました。
             // これは命名規則というより、プログラムが動くための修正です。
-            dayInfo.put("month", currentDate.getMonthValue());
-            dayInfo.put("date", currentDate.getDayOfMonth());
-            dayInfo.put("plans", todayPlans);
-            // DayOfWeekは月曜=1, 日曜=7なので、配列のインデックスに合わせるために調整します
-            dayInfo.put("wday", wdays[currentDate.getDayOfWeek().getValue() % 7]);
-
-            weekDays.add(dayInfo);
+            dayMap.put("month", currentDate.getMonthValue());
+            dayMap.put("date", currentDate.getDayOfMonth());
+            dayMap.put("plans", todayPlans);
+            weekDays.add(dayMap);
         }
 
         return weekDays;
